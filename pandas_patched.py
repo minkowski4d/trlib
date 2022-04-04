@@ -158,7 +158,7 @@ def sb_simulate(self, len_sim=None, data_in_levels=True, out_freq=0, n_sim=10000
 
 
 # -----------------------------------------------------------------------------------------------------------------------
-# -----
+# -----------
 
 DataFrame.rebase = rebase
 Series.rebase = rebase
