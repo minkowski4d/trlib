@@ -5,6 +5,7 @@ from __future__ import division
 import sys as _sys
 import platform as _platform
 import getpass as _getpass
+from multiprocessing import current_process
 from trlib import pandas_patched as pd
 from datetime import datetime as _datetime
 from datetime import date

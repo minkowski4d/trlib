@@ -2,11 +2,12 @@
 # -*- coding: UTF-8 -*-
 
 from __future__ import print_function
+import pandas
 from pandas import *
 from pandas.tseries.frequencies import to_offset
-import traceback
-
 __version__ = pandas.__version__
+from multiprocessing import current_process
+import traceback
 
 from datetime import datetime as _datetime
 from datetime import date, timedelta
@@ -163,27 +164,4 @@ def sb_simulate(self, len_sim=None, data_in_levels=True, out_freq=0, n_sim=10000
 DataFrame.rebase = rebase
 Series.rebase = rebase
 DataFrame.sb_simulate = sb_simulate
-DataFrame.ret = full_return_DF
-DataFrame.mrets = mrets
-DataFrame.stats = stats
-Series._rets_stats = _rets_stats
-DataFrame.index_freq = index_freq
-Series.index_freq = index_freq
-DataFrame.cagr = cagr
-Series.cagr = cagr
-Series.mdd = maxdrawdown
-DataFrame.mdd = maxdrawdown
-DataFrame.rets2lvl = rets2lvl
-Series.rets2lvl = rets2lvl
-DataFrame.perf_since = perf_since
-DataFrame.add_subgroups = add_subgroups
-DataFrame.portfolio = portfolio
-DataFrame.portfolio_rets = portfolio_rets
-DataFrame.rets2ts = rets2ts
-DataFrame.rets2py = rets2py
-DataFrame.rolling_ols = rolling_ols
-DataFrame.rets2db = rets2db
-DataFrame.perf_since = perf_since
-DataFrame.mr2ts = mr2ts
-DataFrame.shr = sharpe_ratio
-DataFrame.convert_timezone = convert_timezone
+
