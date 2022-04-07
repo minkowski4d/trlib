@@ -8,22 +8,23 @@ import numpy as np
 
 
 # Custom Modules
-from risk import pandas_patched as pd
-from risk import utils as ut
+from trlib import pandas_patched as pd
+from trlib import utils as ut
 from scipy.stats import multivariate_t, multivariate_normal
-from tools.charting import charting as CH
+
 
 
 
 def get_returns():
-
-    rets = pd.read_pickle('/Users/fabioballoni/Documents/Private/Work/TR/TR_Risk/Projects/'
-                          'FractionalTrading/VaR/Securities/rets_securities.pkl')
+    """
+    Reads major market index returns. Used solely for backtesting
+    """
+    rets = pd.read_pickle('/Users/fabioballoni/Work/Risk/Projects/FractionalTrading/VaR/Securities/rets_securities.pkl')
 
     return rets
 
 
-def mc_simulate(rets, n = 1000, sim_len = 250, distr = 'norm', verbose = True):
+def mc_simulate(rets, n=1000, sim_len=250, distr='norm', verbose=True):
     """
     Simulation based on MonteCarlo Algorithm.
     @param rets: dataframe - underlying returns

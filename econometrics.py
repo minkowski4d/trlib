@@ -7,11 +7,8 @@ import numpy as np
 from numpy.linalg import inv
 from scipy import stats as si
 
-from risk import pandas_patched as pd
-from risk import utils as ut
-from risk import allocation as alloc
-from risk import risk_metrics as ri
-from tools.charting import charting as CH
+from trlib import pandas_patched as pd
+from trlib import utils as ut
 
 
 def WB(Y, p = 0.015, ff = 1, hori = 252):
@@ -261,24 +258,6 @@ def rolling_corr(rets, window, x):
     return roll_corr
 
 
-def rolling_var(rets, wgts, window, horizon, h, t):
-    """
-
-    :param rets:
-    :param wgts:
-    :param window: calculation period, e.g. 250 for the last 250 days
-    :param horizon: covariance calculation interval, e.g. 1250 days
-    :param h: VaR 99: h=2.33, VaR95: h=1.65
-    :param t: VaR interval, 1=daily, 12=monthly, 250=annualized
-    :return:
-    """
-
-    out = pd.DataFrame(index = rets.index[-window:], columns = ['VaR99,1D'])
-    for k in reversed(range(1, window)):
-        out.iloc[window - k, 0] = alloc._portfolio_risk(wgts, rets[-k - horizon:-k].cov()*t)*h*-1
-
-    return out
-
 
 def rolling_sharpe(rets, window):
     df = rets.copy()
@@ -305,23 +284,16 @@ def sim2cov(rets_sim):
     return covs
 
 
-def sim2risk_ctr(init_wgts, rets_sim):
-    covs = sim2cov(rets_sim)
-    out = pd.DataFrame(index = rets_sim.index.get_level_values(0).unique(), columns = rets_sim.columns)
-    for k in out.index:
-        out.loc[k] = alloc._portfolio_risk_ctr(init_wgts, covs.loc[k])
-
-    return out
 
 
-def sim2beta(rets_sim, qtl, verbose = True):
-    out_beta = pd.DataFrame(columns = ['beta'])
-    for i in rets_sim.index.get_level_values(0).unique():
-        if i%250 == 0 and verbose: print(i)
-        tmp_res = ri.quantile_reg_sim(rets_sim.loc[i], qtl = qtl)
-        out_beta.loc[i, 'beta'] = tmp_res.params.iloc[1]
-
-    return out_beta
+# def sim2beta(rets_sim, qtl, verbose = True):
+#     out_beta = pd.DataFrame(columns = ['beta'])
+#     for i in rets_sim.index.get_level_values(0).unique():
+#         if i%250 == 0 and verbose: print(i)
+#         tmp_res = ri.quantile_reg_sim(rets_sim.loc[i], qtl = qtl)
+#         out_beta.loc[i, 'beta'] = tmp_res.params.iloc[1]
+#
+#     return out_beta
 
 
 def qq_plot_dataset(rets, startdate=None, enddate=None, plot=False):

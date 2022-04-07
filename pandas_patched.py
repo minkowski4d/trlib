@@ -4,16 +4,15 @@
 from __future__ import print_function
 import pandas
 from pandas import *
+import os
 from pandas.tseries.frequencies import to_offset
 __version__ = pandas.__version__
-from multiprocessing import current_process
-import traceback
+
 
 from datetime import datetime as _datetime
 from datetime import date, timedelta
-import six as _six
 import numpy as np
-import pytz
+
 
 # Custom Modules
 from trlib import utils as ut
@@ -43,7 +42,7 @@ def rebase(self, ip=None, rv=100, cut=True, fill=True):
     elif isinstance(ip, (date, _datetime, Timestamp)):
         if isinstance(ip, (_datetime, Timestamp)) and isinstance(df.index[0], date):
             ip = ip.date()
-        elif isinstance(ip, date) and isinstance(df.index[0], (Timestamp, datetime)):
+        elif isinstance(ip, date) and isinstance(df.index[0], (Timestamp, _datetime)):
             ip = _datetime(ip.year, ip.month, ip.day).date()
         ip = (index >= ip).argmax()
     elif isinstance(ip, str):
@@ -151,17 +150,46 @@ def sb_simulate(self, len_sim=None, data_in_levels=True, out_freq=0, n_sim=10000
     sim_df.index.names = ['sim_id', 'time_id']
 
     if (fpath is not None) and (fname is not None):
-        sim_df.to_excel(_os.path.join(fpath, fname + '.xls'))
+        sim_df.to_excel(os.path.join(fpath, fname + '.xls'))
 
     if verbose > 0: print('Simulation completed.')
 
     return sim_df, ids_list
 
 
+
+def rets2lvl(self, compound = True, verbose = False):
+    """
+    returns a series of levels based upon given returns
+    """
+
+    nms = self.columns.tolist() if isinstance(self, DataFrame) else self.name
+    if compound:
+        if verbose: print("Warning: the Returns will be compounded for: %s"%nms)
+        out = (1+self).cumprod()*100
+        fi = self.index.searchsorted(self.first_valid_index())
+        if fi == 0:  # need to add a date for base value
+            if isinstance(self.index[0], int):
+                out = out.reindex(list(out.index)+[out.index[-1]+1]).shift(1)
+            else:
+                d = np.ceil(np.mean([x.days for x in np.diff(out.index.tolist())]))
+                out.loc[out.index[fi]-timedelta(d)] = np.nan
+            out = out.sort_index()
+        else:
+            fi-= 1
+        out.iloc[fi] = 100
+    else:
+        if verbose: print("Warning: the Returns will NOT be compounded for: %s"%nms)
+        out = (self.cumsum()+1)*100
+
+    return out
+
 # -----------------------------------------------------------------------------------------------------------------------
 
 
-DataFrame.rebase = rebase
-Series.rebase = rebase
-DataFrame.sb_simulate = sb_simulate
+DataFrame.rebase =            rebase
+Series.rebase =               rebase
+DataFrame.sb_simulate =       sb_simulate
+DataFrame.rets2lvl =          rets2lvl
+Series.rets2lvl =             rets2lvl
 

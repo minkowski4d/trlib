@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+# Python modules
+import sys
+from datetime import datetime as _datetime
 
 
 
@@ -20,14 +23,14 @@ class ProgressBar:
             #do some stuff with id
     """
 
-    def __init__(self, iterations, show_numbers=False, show_ETA = False):
+    def __init__(self, iterations, show_numbers=False, show_ETA=False):
         self.iterations = iterations
         self.prog_bar = '[]'
         self.fill_char = '*'
         self.width = 50
         self.show_numbers = show_numbers
         self.show_ETA = show_ETA
-        self.start_dt = datetime.now()
+        self.start_dt = _datetime.now()
         self.__update_amount(0)
         self.animate = self.animate_ipython
 
@@ -39,7 +42,7 @@ class ProgressBar:
         else:
             print('\r', self)
             if self.show_ETA:
-                el = (datetime.now() - self.start_dt).seconds
+                el = (_datetime.now() - self.start_dt).seconds
                 print("Elapsed time: %02i:%02i:%02i" % (
                 int(el / 3600.0), int((el % 3600.0) / 60.0), int((el % 3600.0 % 60.0))))
         sys.stdout.flush()
@@ -49,9 +52,9 @@ class ProgressBar:
         if self.show_numbers:
             self.prog_bar += (' %' + str(len(str(self.iterations))) + 'd of %s') % (elapsed_iter, self.iterations)
         if self.show_ETA:
-            sec_elapsed = datetime.now() - self.start_dt
+            sec_elapsed = _datetime.now() - self.start_dt
             avg = sec_elapsed / elapsed_iter
-            self.prog_bar += ' ETA:%s' % ((self.iterations - elapsed_iter) * avg + datetime.now()).strftime(
+            self.prog_bar += ' ETA:%s' % ((self.iterations - elapsed_iter) * avg + _datetime.now()).strftime(
                 '%Y-%m-%d %H:%M:%S')
 
     def __update_amount(self, new_amount):
