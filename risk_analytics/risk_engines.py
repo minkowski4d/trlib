@@ -13,7 +13,7 @@ from trlib.risk_models import mc_models
 
 def portfolio_vaR(rets, wgts, qtl, horizons, engine='mc', fmt_engine={}, verbose=True):
     """
-    wgts=np.random.dirichlet(np.ones(len(rets.columns)),size=1)
+    wgts = np.random.dirichlet(np.ones(len(rets.columns)),size=1)
     """
 
     # ToDo: Implement quick Data shape print
