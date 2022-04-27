@@ -4,7 +4,7 @@
 
 # Import Python Modules
 import numpy as np
-from datetime import datetime as _datetime
+from datetime import datetime as _datetime, date
 
 # Custom Modules
 from trlib import pandas_patched as pd
@@ -12,8 +12,13 @@ from trlib import pandas_patched as pd
 
 def get_sf_prices(filename=None):
 
-    if filename is None: filename = 'stockperks_instr_returns.csv'
+    if filename is None:
+        filename = '/Volumes/GoogleDrive/My\ Drive/Risk/StockPerks/RiskReport_20220331/stockperks_instr_returns_etfs_stocks.csv'
+        filename = filename.replace("\/", "").replace("\\", "")
+        print("\n ***************** Reading data *****************\n")
+        print("Opening file: %s"%filename.split('/')[-1])
 
+    # Read the Data
     df = pd.read_csv(filename)
     # Format Output
     # Column Names
@@ -36,7 +41,7 @@ def get_sf_prices(filename=None):
 
 
 
-def clean_sf_prices(out_dict, verbose = True):
+def clean_sf_prices(df, verbose=True):
     """
     Price Data Cleaner. Input Dictionary should contain a key "prices" and that DataFrame should be be built as:
     index -  date object
@@ -46,8 +51,6 @@ def clean_sf_prices(out_dict, verbose = True):
     E.g. retrievable with trlib.data.data_get.get_sf_returns()
     """
 
-    df = out_dict['prices']
-    df_orig = df.copy()
     # **********************************************************************************
     # Check for NaNs
     df_nans = df.reindex(df[df.isnull().values].index.drop_duplicates())
@@ -76,7 +79,6 @@ def clean_sf_prices(out_dict, verbose = True):
     # Filling Missing Prices
     df = df.fillna(method = 'ffill')
 
-
     # **********************************************************************************
     # Check for potential corporate actions
     rets = df.pct_change().dropna()
@@ -104,7 +106,6 @@ def clean_sf_prices(out_dict, verbose = True):
         print('\nSolution: filling return outliers with Null\n')
         topic_count += 1
 
-
     # Setting
     for k_corp in rets_corp.columns:
         for j in rets_corp.index:
@@ -112,7 +113,39 @@ def clean_sf_prices(out_dict, verbose = True):
                 if verbose: print('\tSetting Return to Null for %s at %s'%(k_corp, j))
                 rets.loc[j, k_corp] = 0
 
-
     print('\n------------------------------------------------\n')
 
     return df, rets
+
+
+
+def get_yahoo_prices(symbols=['LTC-USD'], field='close', startdate=date(2020, 1, 1), enddate=date(2022, 3, 31), verbose=True):
+    """
+    Quick code to retrieve cypto price data from yahoo via pandas data_reader
+    @param symbols: list,
+                    e.g. ['BTC-EUR']
+                    for currencies check availability on https://finance.yahoo.com/currencies
+                    e.g.  ['EURGBP=X']
+    @param field: ohlc, volume or adj_close
+    @param startdate: date object
+    @param enddate: date object
+    """
+
+    import pandas_datareader as web
+
+    out = pd.DataFrame(index = pd.date_range(start = startdate, end = enddate))
+
+    for sym in symbols:
+        if verbose: print('Retrieving price data for: %s'%sym)
+        try:
+            tmp = web.DataReader(sym, 'yahoo', startdate, enddate)
+            tmp = tmp.rename(columns = lambda x: x.replace(' ', '_').lower()).rename(columns = {field:sym})
+            out = out.join(tmp[[sym]])
+        except:
+            if verbose: print('Error: Could not retrieve data for %s'%sym)
+            pass
+
+    return out
+
+
+

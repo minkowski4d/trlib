@@ -31,13 +31,17 @@ if current_process().name == 'MainProcess':
 
 if user_name.startswith('fabioballoni'):
 
-    # Import Module Subs
+    # Import Python MoDules
     import numpy as np
     import matplotlib
     import seaborn as sns
     import os
     from datetime import datetime as _datetime
     sns.set()
+
+    # Import Custom Modules
+    from trlib.stock_perks import sp_data as spd
+    from trlib.instruments import data_prices as dtp
 
     # Matplotlib Parameters
     matplotlib.rcParams['figure.facecolor'] = '1'

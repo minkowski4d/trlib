@@ -184,6 +184,50 @@ def rets2lvl(self, compound = True, verbose = False):
 
     return out
 
+
+
+def add_subgroups(self, total_label=' All',agg_func=np.sum, drop_single_rows=False):
+    '''
+    given a dataframe with multilevel index, calcs a total for each level and adds it as a row to the dataframe
+    :param total_label: string to be used to identify total rows (a str starting with space place it on top when sorting)
+    :param drop_single_rows: remove subtotals for groups where there is only one line
+    '''
+
+    df = self.copy()
+    nlevels = df.index.nlevels
+    out = df.groupby(lambda x: total_label).agg(agg_func)
+    out.index = MultiIndex(levels=[[total_label]]*nlevels, codes=[[0]]*nlevels, names=df.index.names)
+    for l in range(nlevels - 1):
+        temp = df.groupby(level=list(range(l + 1))).agg(agg_func)
+        if temp.index.nlevels == 1:
+            idx = [temp.index.tolist()]
+        else:
+            idx = list(zip(*temp.index.tolist()))
+        for i in range(l + 1,nlevels):
+            idx.append([total_label]*temp.shape[0])
+        temp.index = MultiIndex.from_tuples(list(zip(*idx)), names=df.index.names)
+        out = out.append(temp)
+
+    if out.index.nlevels == 1:
+        out.index = out.index.get_level_values(0)
+
+    # Remove useless groups (because there is only one sublevel)
+    if drop_single_rows:
+        singles = Series(1, index = out.index)
+        for i in range(nlevels - 1):
+            temp = df.groupby(df.index.names[:i + 1]).count().iloc[:,0].to_frame('x')
+            for k in df.index.names[i + 1:]: temp[k] = total_label
+            temp = temp.reset_index().set_index(df.index.names).iloc[:,0]
+            temp = temp[temp == 1]
+            if temp.shape[0] > 0:
+                singles[temp.index] = 0
+        out = out.loc[singles[singles == 1].index]
+
+
+    return df.append(out).sort_index()
+
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 
 
@@ -192,4 +236,5 @@ Series.rebase =               rebase
 DataFrame.sb_simulate =       sb_simulate
 DataFrame.rets2lvl =          rets2lvl
 Series.rets2lvl =             rets2lvl
+DataFrame.add_subgroups =     add_subgroups
 
