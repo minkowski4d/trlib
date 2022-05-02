@@ -12,7 +12,6 @@ from datetime import date
 from pdb import pm as postm
 from pdb import runcall as dbg
 from pdb import runeval as dbge
-from pdb import pm as postm
 from importlib import reload
 
 platform = _platform.system()
@@ -35,13 +34,24 @@ if user_name.startswith('fabioballoni'):
     import numpy as np
     import matplotlib
     import seaborn as sns
+    import sys
     import os
-    from datetime import datetime as _datetime
+    from datetime import datetime as _datetime, date
     sns.set()
 
-    # Import Custom Modules
+    # Custom Modules
+    # Projects
     from trlib.stock_perks import sp_data as spd
+
+    # Instruments
     from trlib.instruments import data_prices as dtp
+    from trlib.instruments import data_info as dtf
+    from trlib.instruments.data_info import sid
+
+    # Mixed
+    from trlib import cache_data as cad
+    from trlib.cache_data import cache_load
+    from trlib import config as cf
 
     # Matplotlib Parameters
     matplotlib.rcParams['figure.facecolor'] = '1'
@@ -59,7 +69,6 @@ if user_name.startswith('fabioballoni'):
     pd.set_option('display.max_colwidth', 40)
     pd.set_option('display.max_rows', 40)
     pd.set_option('display.width', None)
-    # Disables the SettingWithCopyWarning: "
     pd.options.mode.chained_assignment = None
 
 

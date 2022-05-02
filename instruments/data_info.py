@@ -10,13 +10,14 @@ from datetime import datetime as _datetime, date
 from trlib import pandas_patched as pd
 
 
+
 def get_universe(filename=None, project='caracalla'):
 
     if filename is None and project == 'caracalla':
-        filename = '/Volumes/GoogleDrive/My\ Drive/Risk/Data/caracalla_universe.csv'
+        filename = '/Volumes/GoogleDrive/My\ Drive/Risk/Data/DataRaw/caracalla_universe.csv'
         filename = filename.replace("\/", "").replace("\\", "")
         print("\n ***************** Reading data *****************\n")
-        print("Project %s - Opening file: %s"%(project,filename.split('/')[-1]))
+        print("Project %s - Opening file: %s"%(project, filename.split('/')[-1]))
 
         df = pd.read_csv(filename)
         df = df.set_index('INSTRUMENT_ID')
@@ -61,4 +62,27 @@ def enrich_data(df, field='currency', verbose=True):
         print('\t Missing currencies: %s'%len(df[df.CURRENCY.isnull()]))
 
     return df
+
+def sid(sym_str, verbose=True):
+    """
+    Gains Security Inforamtion such as Name or Currency.
+    @param sym_str: string, e.g. ISIN or Name ('Apple')
+    """
+    from trlib import config as cf
+
+    out_dict = dict()
+    for info_dict in cf.cache_info.keys():
+        tmp = cf.cache_info[info_dict]
+        if sym_str in tmp.index:
+            out_dict[info_dict] = tmp.loc[[sym_str]]
+        for col in [k for k in tmp.columns if 'name' in k.lower()] or [k for k in tmp.columns if 'description' in k.lower()]:
+            if tmp[tmp[col].str.contains(sym_str)].empty is False:
+                out_dict[info_dict] = tmp[tmp[col].str.contains(sym_str)]
+
+
+    if len(out_dict.keys()) == 0:
+        print('Could not find "%s"'%sym_str)
+    else:
+        return out_dict
+
 
