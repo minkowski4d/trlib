@@ -74,3 +74,16 @@ def get_yahoo_prices(symbols=['LTC-USD'], field='close', startdate=date(2020, 1,
 
 
 
+def find_corr_series(df, ids2corr =[]):
+
+    if len(ids2corr) == 0:
+        # MSCI World ETFs with best data covorage as of 20220509:
+        #
+        # INSTRUMENT_ID	NAME_SHORT	                INSTRUMENT_TYPE	    CURRENCY
+        # IE00B4L5Y983	Core MSCI World USD (Acc)	FUND	            USD
+        # IE00B0M62Q58	MSCI World USD (Dist)	    FUND	            USD
+
+        ids2corr = ['IE00B0M62Q58','IE00B4L5Y983']
+
+
+

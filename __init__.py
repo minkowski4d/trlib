@@ -8,11 +8,12 @@ import getpass as _getpass
 from multiprocessing import current_process
 from trlib import pandas_patched as pd
 from datetime import datetime as _datetime
-from datetime import date
 from pdb import pm as postm
 from pdb import runcall as dbg
 from pdb import runeval as dbge
+from pdb import pm as postm
 from importlib import reload
+
 
 platform = _platform.system()
 user_node = _platform.node()
@@ -34,18 +35,18 @@ if user_name.startswith('fabioballoni'):
     import numpy as np
     import matplotlib
     import seaborn as sns
-    import sys
-    import os
-    from datetime import datetime as _datetime, date
+    from datetime import datetime as _datetime
+
     sns.set()
 
     # Custom Modules
     # Projects
-    from trlib.stock_perks import sp_data as spd
+    from trlib.projects.stock_perks import sp_data as spd
 
     # Instruments
     from trlib.instruments import data_prices as dtp
     from trlib.instruments import data_info as dtf
+    from trlib.instruments import data_quality as dtq
     from trlib.instruments.data_info import sid
 
     # Mixed

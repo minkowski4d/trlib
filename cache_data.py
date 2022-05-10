@@ -13,7 +13,13 @@ from trlib import config as cf
 
 
 def cache_load(verbose=True):
+    """
+    Loads dictionary and stores them to variables defined in trlib/config.py
+    config.cache_prices: dataframe - prices of current investible universe
+    config.cache_info: dictionary - information on a symbol e.g. country, currency, name
 
+    @param verbose: True or False
+    """
     # Define Variables:
     data_pth = '/Volumes/GoogleDrive/My Drive/Risk/Data/'
 
@@ -28,7 +34,12 @@ def cache_load(verbose=True):
 
 
 def build_info_cache(save_cache=True, verbose=True):
+    """
+    Creates and stores information on a symbol e.g. country, currency, name
 
+    @param save_cache: saves dataframe output for each universe, e.g. 'Caracalla'
+    @param verbose: True or False
+    """
     from trlib.instruments import data_info as dtf
 
     if verbose: print("\n ***************** Building Securities Universe Cache *****************\n")
@@ -67,7 +78,14 @@ def build_info_cache(save_cache=True, verbose=True):
 
 
 def build_price_cache(create_new=True, save_cache=True,verbose=True):
+    """
+    Builds and stores price cache.
 
+    @param create_new: True or False, creates new cache by overwriting present .pkl file
+    @param save_cache:
+    """
+
+    # Import custom modules
     from trlib.instruments import data_prices as dtp
     from trlib.instruments import data_info as dtf
 
@@ -78,7 +96,7 @@ def build_price_cache(create_new=True, save_cache=True,verbose=True):
     # Check for already dumped cache files
     data_pth = '/Volumes/GoogleDrive/My Drive/Risk/Data/'
     data_raw_pth = '/Volumes/GoogleDrive/My Drive/Risk/Data/DataRaw/'
-    if 'cache_prices.pkl' in os.listdir(data_pth):
+    if 'cache_prices_raw.pkl' in os.listdir(data_raw_pth):
         prices_univ_0 = pd.read_pickle(os.path.join(data_raw_pth,'cache_prices_raw.pkl'))
         if verbose: print("\t\t Found cache_prices with oldest entry as of %s"%max(prices_univ_0.PRICE_DT.unique()))
     else:
@@ -98,7 +116,7 @@ def build_price_cache(create_new=True, save_cache=True,verbose=True):
     price_univ_1 = pd.concat([prices_univ_0, df_new], axis=0)
     price_univ_1 = price_univ_1.drop_duplicates(subset = ['PRICE_DT','INSTRUMENT_ID'])
 
-    if verbose: print("\t\t Storing new raw historical price in histr_returns.pkl")
+    if verbose: print("\t\t Storing new raw historical price in cache_prices_raw.pkl")
     price_univ_1.to_pickle(os.path.join(data_raw_pth,'cache_prices_raw.pkl'))
 
     if verbose: print("\t\t Found %s new prices. \n"%((len(prices_univ_0)+len(df_new)) - len(price_univ_1)))
@@ -107,7 +125,7 @@ def build_price_cache(create_new=True, save_cache=True,verbose=True):
     df_prx = price_univ_1.pivot_table(index = price_univ_1.PRICE_DT,columns = price_univ_1.INSTRUMENT_ID,values = 'PRICE')
     df_prx = df_prx.dropna(how = 'all',axis = 0)
     df_prx = df_prx.rename_axis(None, axis = 1)
-    df_prx = df_prx.rename(index = lambda x: _datetime.strptime(x,"%Y-%m-%d"))
+    df_prx = df_prx.rename(index = lambda x: _datetime.strptime(x,"%Y-%m-%d").date())
 
 
     if save_cache:
