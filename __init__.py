@@ -8,6 +8,7 @@ import getpass as _getpass
 from multiprocessing import current_process
 from trlib import pandas_patched as pd
 from datetime import datetime as _datetime
+from datetime import date, timedelta
 from pdb import pm as postm
 from pdb import runcall as dbg
 from pdb import runeval as dbge
@@ -48,6 +49,9 @@ if user_name.startswith('fabioballoni'):
     from trlib.instruments import data_info as dtf
     from trlib.instruments import data_quality as dtq
     from trlib.instruments.data_info import sid
+
+    # Risk Analytics
+    from trlib.risk_analytics import risk_engines as rie
 
     # Mixed
     from trlib import cache_data as cad

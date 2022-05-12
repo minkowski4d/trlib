@@ -9,16 +9,15 @@ from scipy.stats import multivariate_t, multivariate_normal
 
 
 # Custom Modules
-from risk import pandas_patched as pd
-from risk import utils as ut
-from risk import econometrics as ec
-from trade_republic.risk_models import mc_vaR as mcv
-from tools.charting import charting as CH
+from trlib import pandas_patched as pd
+from trlib import econometrics as ec
+from trlib.risk_models import mc_models
+from trlib import charting as ch
 
 
 
 
-def os_convergence_test(rets, wgts, qtl, cut_ddate, model_fmt = {'model':'mc','distr':'t'}, n_sim = 5e2, repetitions = 25,
+def mc_os_convergence_test(rets, wgts, qtl, cut_ddate, model_fmt = {'model':'mc','distr':'t'}, n_sim = 5e2, repetitions = 25,
                    sim_len = [250, 500, 750, 1000], verbose = False):
     """
     Convergence Test of MonteCarlo Distribution regarding overshoots (daily loss > VaR quantile
@@ -47,7 +46,7 @@ def os_convergence_test(rets, wgts, qtl, cut_ddate, model_fmt = {'model':'mc','d
         for rep in range(0, repetitions):
             if verbose: print("\t Repetition num = %s"%rep)
             if model_fmt['model'] == 'mc':
-                sim_rets, sim_ts = mcv.mc_simulate(rets_cut[-n:], n = n_sim, distr = model_fmt['distr'])
+                sim_rets, sim_ts = mc_models.mc_simulate(rets_cut[-n:], n = n_sim, distr = model_fmt['distr'])
             tmp_vaR = ec.sim2VaR(sim_rets.dot(wgts.T), qtl, 1, calc_rets=False)
             os_bool = 1 if tmp_vaR.median().iloc[0] > realized_loss else 0
             tmp_ll.append(os_bool)
@@ -62,27 +61,27 @@ def os_convergence_test(rets, wgts, qtl, cut_ddate, model_fmt = {'model':'mc','d
     x_axis = np.asarray(sim_len)
 
     for x, y in zip(x_axis, y_axis):
-        CH.scatter([x] * len(y), y, s=12)
+        ch.scatter([x] * len(y), y, s=12)
 
     for x, y in zip(n_sim, means):
-        CH.scatter(x, y, s=12, color = 'red')
+        ch.scatter(x, y, s=12, color = 'red')
 
     for x, y in zip(n_sim, medians):
-        CH.scatter(x, y, s=12, color = 'blue')
+        ch.scatter(x, y, s=12, color = 'blue')
 
     for x, y in zip(n_sim, len(n_sim)*[rets.dot(wgts.T).iloc[:, 0].quantile(0.01)]):
-        CH.scatter(x, y, s=12, color = 'yellow')
+        ch.scatter(x, y, s=12, color = 'yellow')
 
     #CH.xscale('log')
-    CH.title("Direct Monte-Carlo Estimation")
-    CH.ylabel("Probability Estimate")
-    CH.xlabel('Number of Samples')
-    CH.grid(True)
-    CH.show()
+    ch.title("Direct Monte-Carlo Estimation")
+    ch.ylabel("Probability Estimate")
+    ch.xlabel('Number of Samples')
+    ch.grid(True)
+    ch.show()
 
 
 
-def model_backtest(rets, wgts, qtl, start = -251, model_fmt = {'model':'mc','distr':'norm', 'sim_len':250}, n_sim = 100, verbose = True):
+def mc_model_backtest(rets, wgts, qtl, start = -251, model_fmt = {'model':'mc','distr':'norm', 'sim_len':250}, n_sim = 100, verbose = True):
     """
     Rolling window Model backtest run for testing and reproduction purposes. The output aligns realized returns and forecasted 1D VaR
     figures. The data can be plotted via
@@ -109,7 +108,7 @@ def model_backtest(rets, wgts, qtl, start = -251, model_fmt = {'model':'mc','dis
 
         # Selecting the model and run simulation
         if model_fmt['model'] == 'mc':
-            sim_rets, sim_ts = mcv.mc_simulate(tmp_rets, n = n_sim, distr = model_fmt['distr'])
+            sim_rets, sim_ts = mc_models.mc_simulate(tmp_rets, n = n_sim, distr = model_fmt['distr'])
             tmp_vaR = ec.sim2VaR(sim_rets.dot(wgts.T), qtl, 1, calc_rets = False)
             out_var_1d.loc[out_var_1d.index[n]] = tmp_vaR.median().iloc[0]
 
@@ -122,3 +121,35 @@ def model_backtest(rets, wgts, qtl, start = -251, model_fmt = {'model':'mc','dis
     out = out.dropna() # Drops first roe, which is NaN due to shifting the vaR forecast
 
     return out
+
+
+def vaR_overshoot_backtest(rets):
+    """
+    Model backtest for regulatory requirements
+    """
+    from trlib.risk_analytics import risk_engines as rie
+    out = rets.copy()
+    for dd in out.index:
+        tmp_fhs_gjr = rie.portfolio_vaR(rets[:dd],
+                                        np.array([[1]]),
+                                        engine = 'gjr',
+                                        fmt_engine = {'qtl': 0.01, 'fhs': True},
+                                        verbose = False)
+        # Assign gjr_fhs to output
+        out.loc[dd, 'gjr_fhs'] = tmp_fhs_gjr.iloc[0][0]
+
+        tmp_gjr = rie.portfolio_vaR(rets[:dd],
+                                    np.array([[1]]),
+                                    engine = 'gjr',
+                                    fmt_engine = {'qtl': 0.01, 'fhs': False},
+                                    verbose = False)
+        # Assign gjr to output
+        out.loc[dd, 'gjr'] = tmp_gjr.iloc[0][0]
+
+    return out
+
+
+
+
+
+

@@ -8,10 +8,10 @@ import numpy as np
 # Custom Modules
 from trlib import pandas_patched as pd
 from trlib import econometrics as ec
-from trlib.risk_models import mc_models
 
 
-def portfolio_vaR(rets, wgts, qtl, horizons, engine='mc', fmt_engine={}, verbose=True):
+
+def portfolio_vaR(rets, wgts, holding_period=1, engine='mc', fmt_engine={}, verbose=True):
     """
     wgts = np.random.dirichlet(np.ones(len(rets.columns)),size=1)
     """
@@ -20,6 +20,8 @@ def portfolio_vaR(rets, wgts, qtl, horizons, engine='mc', fmt_engine={}, verbose
     rets_vaR = rets.copy()
 
     if engine == 'egarch' or engine == 'gjr':
+        # Import Model
+        from trlib.risk_models import garch_models as gm
 
         # GARCH Model Inputs
         # window: lookback period, e.g. 250 days
@@ -29,68 +31,87 @@ def portfolio_vaR(rets, wgts, qtl, horizons, engine='mc', fmt_engine={}, verbose
         # ftol: tolerance for optimizer convergence, default 1e-06
         # max_iter: maximum iteration for convergence search
 
-        fmt_engine_keys = ['window', 'horizon', 'rescale', 'decay', 'ftol', 'max_iter', 'garch_engine']
+        fmt_engine_keys = ['window', 'qtl', 'horizon', 'rescale', 'decay', 'ftol', 'max_iter', 'fhs', 'garch_engine']
 
         # Default Values
         fmt_engine_default = {'window_default': 250,
+                              'qtl_default': 0.01,
                               'horizon_default': 1,
                               'rescale_default': 1000,
                               'decay_default': 1,
                               'ftol_default': 1e-06,
                               'max_iter_default': 150,
-                              'garch_engine_default': engine,
-                              'eval_model_exec': "gm.calculate_vaR_garch(rets_var[['pf']], "\
-                                                 "fmt_engine['window'], "\
-                                                 "fmt_engine['horizon'], "\
-                                                 "fmt_engine['rescale'], "\
-                                                 "fmt_engine['decay'], "\
-                                                 "fmt_engine['ftol'], "\
-                                                 "fmt_engine['max_iter'], "\
-                                                 "fmt_engine['garch_engine'])"}
+                              'fhs_default': False,
+                              'garch_engine_default': engine}
 
 
     elif engine == 'mc':
+        # Import Model
+        from trlib.risk_models import mc_models
 
         # Monte Carlo Model Inputs
         # window: lookback period, e.g. 250 days
         # n_sim: number of simulations
 
-        fmt_engine_keys = ['window', 'n_sim', 'eval_model_exec']
+        fmt_engine_keys = ['window', 'n_sim', 'distr']
         # Default Values
-        fmt_engine_default = {'window_default': 250,'n_sim_default': 1000,
-                              'eval_model_exec_default': "mc_models.mc_simulate(rets=rets_vaR, "\
-                                                         "n=fmt_engine['n_sim'], "\
-                                                         "sim_len=fmt_engine['window'], "\
-                                                         "verbose=verbose)"}
+        fmt_engine_default = {'window_default': 250,
+                              'qtl_default': 0.01,
+                              'n_sim_default': 1000,
+                              'distr_default': 'norm'}
 
     # Build fmt_engine:
     for k in fmt_engine_keys:
         if not k in fmt_engine.keys():
             fmt_engine[k] = fmt_engine_default[k + '_default']
 
-    if verbose:
-        fmt_engine_string = ''
-        for k in fmt_engine:
-            fmt_engine_string += '\t\t\t%s: %s\n'%(k, fmt_engine[k])
+    fmt_engine_string = ''
+    for k in fmt_engine:
+        fmt_engine_string += '\t\t\t%s: %s\n'%(k, fmt_engine[k])
 
+    if verbose:
         if verbose:
             # Print Model Setup
-            print("     ------------------------------------------------------------")
+            print("\n     ------------------------------------------------------------")
             print("               Portfolio VaR Calculation")
             print("     ------------------------------------------------------------")
-            print('      Model: %s'%engine)
+            print('      Model: \n\t\t\t%s\n'%engine)
             print('      Model Inputs:\n %s'%fmt_engine_string)
+            print("     ------------------------------------------------------------")
 
+    # Calculate Value at Risk
+    # GARCH
+    if engine == 'egarch' or engine == 'gjr':
+        ret_vaR = rets.portfolio_rets(wgts)
+        out = gm.calculate_vaR_garch(ret_vaR[['pf']],
+                                        window = fmt_engine['window'],
+                                        qtl = fmt_engine['qtl'],
+                                        horizon = fmt_engine['horizon'],
+                                        rescale = fmt_engine['rescale'],
+                                        decay = fmt_engine['decay'],
+                                        ftol = fmt_engine['ftol'],
+                                        max_iter = fmt_engine['max_iter'],
+                                        fhs = fmt_engine['fhs'],
+                                        garch_engine = fmt_engine['garch_engine'])
+        # Format
+        out.index.name = 'ddate'
 
-    if verbose : print("\nInitializing MonteCarlo Simulation for Value at Risk Calculation")
-    sim_rets, sim_ts = eval(fmt_engine['eval_model_exec'])
+    # Monte Carlo
+    elif engine == 'mc':
+        if verbose : print("\nInitializing MonteCarlo Simulation for Value at Risk Calculation")
+        sim_rets, sim_ts = mc_models.mc_simulate(rets = rets,
+                                                 n = fmt_engine['n_sim'],
+                                                 sim_len = fmt_engine['window'],
+                                                 distr = fmt_engine['distr'],
+                                                 verbose = verbose)
 
-    out = pd.DataFrame(index=['VaR'])
-    for h in horizons:
-        tmp_vaR = ec.sim2VaR(sim_rets.dot(wgts.T), qtl, h, calc_rets=False)
-        tmp_vaR.columns = ['VaR %s,%sD' % (str(int(100 * qtl)), str(h))]
-        out.loc['VaR', 'VaR %s,%sD' % (str(int(100 * qtl)), str(h))] = tmp_vaR.median().iloc[0]
-
+        # Build Output
+        out = pd.DataFrame(index=['VaR'])
+        # Calculate Value at Risk for holding period and quantile
+        qtl = fmt_engine['qtl']
+        tmp_vaR = sim_rets.dot(wgts.T).groupby("sim_id").quantile(qtl) * np.sqrt(holding_period)
+        tmp_vaR.columns = ['var%s_%sd' % (str(int(100 * (1-qtl))), str(holding_period))]
+        out.loc['VaR', 'var%s_%sd' % (str(int(100 * (1-qtl))), str(holding_period))] = tmp_vaR.median().iloc[0]
 
     return out
 

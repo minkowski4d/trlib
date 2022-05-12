@@ -47,7 +47,7 @@ def sim2rets(sim, retfreq = 1):
     return sim.pct_change(periods = retfreq).query("time_id>=%i"%(retfreq + m)).loc(axis = 0)[:, ::retfreq]
 
 
-def sim2VaR(sim, p, h, calc_rets = False):
+def sim2VaR(sim, p, h, calc_rets=False):
     if calc_rets:
         rets = sim2rets(sim, h)
         scale_t = 1

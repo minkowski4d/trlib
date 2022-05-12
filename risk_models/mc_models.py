@@ -13,24 +13,13 @@ from trlib import utils as ut
 from scipy.stats import multivariate_t, multivariate_normal
 
 
-
-
-def get_returns():
-    """
-    Reads major market index returns. Used solely for backtesting
-    """
-    rets = pd.read_pickle('/Users/fabioballoni/Work/Risk/Projects/FractionalTrading/VaR/Securities/rets_securities.pkl')
-
-    return rets
-
-
 def mc_simulate(rets, n=1000, sim_len=250, distr='norm', verbose=True):
     """
     Simulation based on MonteCarlo Algorithm.
     @param rets: dataframe - underlying returns
     @param n: integer -  number of simulations, default = 1000
     @param sim_len: integer - length of simulation output, default = 250
-    @param distr: string - multivariate distribution used in simulation, default = 'normal', options = 't' for Student T
+    @param distr: string - multivariate distribution used in simulation, default = 'norm', options = 't' for Student T
     @param verbose:
 
     Additional Info:
@@ -55,7 +44,7 @@ def mc_simulate(rets, n=1000, sim_len=250, distr='norm', verbose=True):
             tmp_rets = pd.DataFrame(multivariate_normal.rvs(means, rets_cov_mtx, size = sim_len), columns = rets.columns)
 
         elif distr == 't':
-            tmp_rets = pd.DataFrame(multivariate_t.rvs(means, rets_cov_mtx, df=3, size = sim_len), columns = rets.columns)
+            tmp_rets = pd.DataFrame(multivariate_t.rvs(means, rets_cov_mtx, df=10, size = sim_len), columns = rets.columns)
 
         # Create Indexed Time Series:
         tmp_ts = tmp_rets.rets2lvl()

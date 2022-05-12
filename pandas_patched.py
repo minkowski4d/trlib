@@ -228,6 +228,20 @@ def add_subgroups(self, total_label=' All',agg_func=np.sum, drop_single_rows=Fal
 
 
 
+def portfolio_rets(self, wgts):
+    """
+    Calculates Portfolio Return based on return dataframe and weights
+    @param wgts: list or array
+    """
+    out = DataFrame(index=self.index, columns=['pf'])
+
+    if isinstance(wgts, list):
+        wgts = DataFrame([wgts]*len(self.index),index=self.index,columns=self.columns)
+
+    out['pf'] = self.mul(wgts).sum(axis=1)
+
+    return out
+
 # -----------------------------------------------------------------------------------------------------------------------
 
 
@@ -237,4 +251,5 @@ DataFrame.sb_simulate =       sb_simulate
 DataFrame.rets2lvl =          rets2lvl
 Series.rets2lvl =             rets2lvl
 DataFrame.add_subgroups =     add_subgroups
+DataFrame.portfolio_rets=     portfolio_rets
 

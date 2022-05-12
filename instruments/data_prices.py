@@ -58,7 +58,7 @@ def get_yahoo_prices(symbols=['LTC-USD'], field='close', startdate=date(2020, 1,
 
     import pandas_datareader as web
 
-    out = pd.DataFrame(index = pd.date_range(start = startdate, end = enddate))
+    out = pd.DataFrame(index = pd.date_range(start = startdate, end = enddate, freq='B'))
 
     for sym in symbols:
         if verbose: print('Retrieving price data for: %s'%sym)
@@ -86,4 +86,10 @@ def find_corr_series(df, ids2corr =[]):
         ids2corr = ['IE00B0M62Q58','IE00B4L5Y983']
 
 
+def get_future_returns():
+    """
+    Reads major market index returns. Used solely for backtesting
+    """
+    rets = pd.read_pickle('/Users/fabioballoni/Work/Risk/Projects/FractionalTrading/VaR/Securities/rets_securities.pkl')
 
+    return rets
