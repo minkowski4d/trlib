@@ -13,8 +13,17 @@ from trlib import econometrics as ec
 
 def portfolio_vaR(rets_orig, wgts, holding_period=1, engine='mc', fmt_engine={}, verbose=True):
     """
+    Random Weights
     wgts = np.random.dirichlet(np.ones(len(rets.columns)),size=1)
     """
+
+    # Import multiple used models:
+    # Python
+    from scipy.stats import norm, t
+
+    # Custom Modules
+    from trlib.risk_models import support_models as smo
+
 
     # ToDo: Implement quick Data shape print
 
@@ -45,30 +54,29 @@ def portfolio_vaR(rets_orig, wgts, holding_period=1, engine='mc', fmt_engine={},
 
 
     elif engine == 'mc':
-        # Import Model
-        from trlib.risk_models import mc_models
-
         # Monte Carlo Model Inputs
         # window: lookback period, e.g. 250 days
         # n_sim: number of simulations
 
-        fmt_engine_keys = ['window', 'holding_period', 'n_sim', 'distr', 'decay']
+        fmt_engine_keys = ['window', 'holding_period', 'n_sim', 'distr', 'decay', 'qtl']
         # Default Values
         fmt_engine_default = {'window_default': 250,
                               'holding_period_default': 1,
                               'qtl_default': 0.01,
                               'n_sim_default': 1000,
                               'distr_default': 'norm',
-                              'decay_default': 1}
+                              'decay_default': 0.94,
+                              'qtl': 0.01}
 
     elif engine == 'hs':
-        fmt_engine_keys = ['window', 'qtl', 'holding_period', 'decay']
+        fmt_engine_keys = ['window', 'qtl', 'holding_period', 'decay', 'distr']
 
         # Default Values
         fmt_engine_default = {'window_default': 250,
                               'qtl_default': 0.01,
                               'holding_period_default': 1,
-                              'decay_default': 0.94}
+                              'decay_default': 0.94,
+                              'distr': 'norm'}
 
     # Build fmt_engine:
     for k in fmt_engine_keys:
@@ -115,22 +123,35 @@ def portfolio_vaR(rets_orig, wgts, holding_period=1, engine='mc', fmt_engine={},
 
     # Monte Carlo
     elif engine == 'mc':
+        # Import Model
+        from trlib.risk_models import mc_models
         if verbose : print("\nInitializing MonteCarlo Simulation for Value at Risk Calculation")
         # Initialise MonteCarlo Calculation
         sim_rets, sim_ts = mc_models.mc_simulate(rets = rets,
                                                  n = fmt_engine['n_sim'],
                                                  sim_len = fmt_engine['window'],
                                                  distr = fmt_engine['distr'],
-                                                 decay = fmt_engine['decay'],
                                                  verbose = verbose)
 
         # Build Output
         out = pd.DataFrame(index=['VaR'])
         # Calculate Value at Risk for holding period and quantile
         qtl = fmt_engine['qtl']
-        tmp_vaR = sim_rets.dot(wgts.T).groupby("sim_id").quantile(qtl) * np.sqrt(holding_period)
-        tmp_vaR.columns = ['var%s_%sd' % (str(int(100 * (1-qtl))), str(holding_period))]
-        out.loc['VaR', 'var%s_%sd' % (str(int(100 * (1-qtl))), str(holding_period))] = tmp_vaR.median().iloc[0]
+        h = fmt_engine['holding_period']
+
+        # Apply EWMA:
+        vol_ewma_mc = smo.ewma_volatility(sim_rets.unstack().T, decay = fmt_engine['decay'])
+
+        # Calculate z-score of the quantile:
+        fit_norm = sim_rets.unstack().T.apply(lambda x: norm.fit(x), axis = 0)
+        if fmt_engine['distr'] == 'norm':
+            vaR_mc_ewma = -fit_norm.iloc[0] * h + vol_ewma_mc.T.iloc[:, 0] * norm.ppf(qtl) * np.sqrt(h)
+        elif fmt_engine['distr'] == 't':
+            # fit_t = sim_rets.unstack().T.apply(lambda x: t.fit(x), axis = 0)
+            # vaR_mc_ewma = -fit_norm.iloc[0] * h + (h*(fit_t.iloc[0] - 2)/fit_t.iloc[0])**0.5*t.ppf(qtl, fit_t.iloc[0]) * vol_ewma_mc.T.iloc[:,0]
+            vaR_mc_ewma = -fit_norm.iloc[0]*h + (h*(5 - 2)/5) ** 0.5*t.ppf(qtl,5)*vol_ewma_mc.T.iloc[:,0]
+
+        out.loc['VaR', 'var%s_%sd' % (str(int(100 * (1-qtl))), str(h))] = vaR_mc_ewma.median()
 
 
     elif engine == 'hs':
@@ -139,13 +160,18 @@ def portfolio_vaR(rets_orig, wgts, holding_period=1, engine='mc', fmt_engine={},
         ret_vaR = rets.portfolio_rets(wgts)
 
         # Apply EWMA volatility
-        from trlib.risk_models import support_models as smo
-        vol_ewma = smo.ewma_volatility(rets[-fmt_engine['window']:], decay=fmt_engine['decay'])
-        print(vol_ewma)
+        vol_ewma = smo.ewma_volatility(ret_vaR[-fmt_engine['window']:], decay=fmt_engine['decay'])
+
         #Calculate VaR
-        from scipy.stats import norm
         qtl = fmt_engine['qtl']
-        value_at_risk = vol_ewma * norm.ppf(qtl)
+        h = fmt_engine['holding_period']
+        if fmt_engine['distr'] == 'norm':
+            mu_norm, sig_norm = norm.fit(ret_vaR)
+            value_at_risk = -mu_norm * h + vol_ewma * norm.ppf(qtl) * np.sqrt(h)
+        elif fmt_engine['distr'] == 't':
+            mu_norm, sig_norm = norm.fit(ret_vaR)
+            nu, mu_t, sig_t = t.fit(ret_vaR)
+            value_at_risk = - mu_norm * h + (h*(nu - 2)/nu) ** 0.5*t.ppf(qtl, nu) * vol_ewma
 
         # Build Output
         out = pd.DataFrame(index=['VaR'])

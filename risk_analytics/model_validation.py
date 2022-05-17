@@ -153,7 +153,7 @@ def vaR_overshoot_backtest(rets, wgts=np.array([[1]]), window=250, engine='garch
             tmp_mc = rie.portfolio_vaR(tmp_rets,
                                        wgts,
                                        engine = 'mc',
-                                       fmt_engine = {'qtl': 0.01, 'distr': 't', 'n_sim': 500, 'window':window})
+                                       fmt_engine = {'qtl': 0.01, 'distr': 't', 'n_sim': 250, 'window':window})
 
             # Assign mc to output
             out.loc[dd, 'mc'] = tmp_mc.iloc[0][0]

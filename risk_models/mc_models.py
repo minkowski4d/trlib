@@ -5,22 +5,21 @@
 
 # Import Python Modules
 import numpy as np
-
+from scipy.stats import multivariate_t, multivariate_normal, t, norm
 
 # Custom Modules
 from trlib import pandas_patched as pd
 from trlib import utils as ut
-from scipy.stats import multivariate_t, multivariate_normal
 
 
-def mc_simulate(rets, n=1000, sim_len=250, distr='norm', decay=1, verbose=True):
+
+def mc_simulate(rets, n=1000, sim_len=250, distr='norm', verbose=True):
     """
     Simulation based on MonteCarlo Algorithm.
     @param rets: dataframe - underlying returns
     @param n: integer -  number of simulations, default = 1000
     @param sim_len: integer - length of simulation output, default = 250
     @param distr: string - multivariate distribution used in simulation, default = 'norm', options = 't' for Student T
-    @param decay: default 1. Values 1 to 0.94
     @param verbose:
 
     Additional Info:
@@ -35,22 +34,19 @@ def mc_simulate(rets, n=1000, sim_len=250, distr='norm', decay=1, verbose=True):
 
     # Define Multivariate Inputs
     rets_mc = rets.copy()
-    # Use decay
-    if decay != 1:
-        rets_mc = rets_mc.sort_index(ascending=False).ewm(alpha=decay, adjust=False).mean().sort_index(ascending=True)
     means = list(rets_mc.mean())
 
     rets_cov_mtx = np.matrix(rets_mc.cov())
 
     # Simulation Iteration
     sim_rets = pd.DataFrame(); sim_ts = pd.DataFrame()
-    for i in  np.arange(0, n, 1):
+    for i in np.arange(0, n, 1):
         # Run Multivariate MonteCarlo based on 'distr' input.
         if distr == 'norm':
             tmp_rets = pd.DataFrame(multivariate_normal.rvs(means, rets_cov_mtx, size = sim_len), columns = rets.columns)
 
         elif distr == 't':
-            tmp_rets = pd.DataFrame(multivariate_t.rvs(means, rets_cov_mtx, df=10, size = sim_len), columns = rets.columns)
+            tmp_rets = pd.DataFrame(multivariate_t.rvs(means, rets_cov_mtx, df=5, size = sim_len), columns = rets.columns)
 
         # Create Indexed Time Series:
         tmp_ts = tmp_rets.rets2lvl()
