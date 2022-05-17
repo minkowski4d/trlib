@@ -13,13 +13,14 @@ from trlib import utils as ut
 from scipy.stats import multivariate_t, multivariate_normal
 
 
-def mc_simulate(rets, n=1000, sim_len=250, distr='norm', verbose=True):
+def mc_simulate(rets, n=1000, sim_len=250, distr='norm', decay=1, verbose=True):
     """
     Simulation based on MonteCarlo Algorithm.
     @param rets: dataframe - underlying returns
     @param n: integer -  number of simulations, default = 1000
     @param sim_len: integer - length of simulation output, default = 250
     @param distr: string - multivariate distribution used in simulation, default = 'norm', options = 't' for Student T
+    @param decay: default 1. Values 1 to 0.94
     @param verbose:
 
     Additional Info:
@@ -33,8 +34,13 @@ def mc_simulate(rets, n=1000, sim_len=250, distr='norm', verbose=True):
     if verbose: pb = ut.ProgressBar(n)
 
     # Define Multivariate Inputs
-    means = list(rets.mean())
-    rets_cov_mtx = np.matrix(rets.cov())
+    rets_mc = rets.copy()
+    # Use decay
+    if decay != 1:
+        rets_mc = rets_mc.sort_index(ascending=False).ewm(alpha=decay, adjust=False).mean().sort_index(ascending=True)
+    means = list(rets_mc.mean())
+
+    rets_cov_mtx = np.matrix(rets_mc.cov())
 
     # Simulation Iteration
     sim_rets = pd.DataFrame(); sim_ts = pd.DataFrame()

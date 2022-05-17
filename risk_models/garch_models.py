@@ -260,13 +260,12 @@ def garch_gjr(rets_rescaled, dist='t'):
 #     return out_dict
 
 
-def calculate_vaR_garch(rets, window=250, qtl=0.01, horizon=1, rescale=100, decay=1, ftol=1e-06, max_iter=150, fhs=False, garch_engine='gjr'):
+def calculate_vaR_garch(rets, qtl=0.01, holding_period=1, rescale=100, decay=1, ftol=1e-06, max_iter=150, fhs=False, garch_engine='gjr'):
     """
     Calculate Parametric Value at Risk Quantiles 99&95 throughout GARCH Volatiltiy Model
     :param rets: Single Column percentage change dataframe
-    :param window: lookback window, e.g. 250
     :param qtl: quantile, e.g. 0.01 (1 - confidence interval)
-    :param horizon: forecast horizon, e.g. 1
+    :param holding_period: forecast horizon, e.g. 1
     :param rescale: e.g. 100
     :param decay: applied via an exponentially weighted moving average, e.g. 0.94 or 1 for no decay
     :param ftol: Precision goal for the value of f in the stopping criterion in slsqp optimizer, e.g. 1e-03
@@ -279,7 +278,7 @@ def calculate_vaR_garch(rets, window=250, qtl=0.01, horizon=1, rescale=100, deca
         rets = rets.rename(index=lambda x: _datetime(x.year, x.month, x.day))
 
     # Apply Sample Size
-    rets_garch = rets[-window:].copy()
+    rets_garch = rets.copy()
     # Use decay
     if decay != 1:
         rets_garch = rets_garch.sort_index(ascending=False).ewm(alpha=decay, adjust=True).mean()
@@ -293,9 +292,9 @@ def calculate_vaR_garch(rets, window=250, qtl=0.01, horizon=1, rescale=100, deca
         am = garch_gjr(rets_garch)[0]
 
     res = am.fit(disp='off', last_obs=str(rets_garch.index[-1])[:10], options={'maxiter': max_iter, 'ftol': ftol})
-    forecasts = res.forecast(horizon=horizon, start=str(rets_garch.index[-1])[:10], simulations=1000, reindex = False)
-    cond_mean = forecasts.mean[-horizon:]
-    cond_var = forecasts.variance[-horizon:]
+    forecasts = res.forecast(horizon=holding_period, start=str(rets_garch.index[-1])[:10], simulations=1000, reindex = False)
+    cond_mean = forecasts.mean[-holding_period:]
+    cond_var = forecasts.variance[-holding_period:]
     if fhs:
         std_rets = (rets_garch.iloc[:, 0] - res.params["mu"]).div(res.conditional_volatility)
         std_rets = std_rets.dropna()

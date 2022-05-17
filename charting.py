@@ -189,7 +189,7 @@ def twinaxis_align_yorigin(ax0,v0,ax1,v1):
     ax1.set_ylim(miny + dy,maxy + dy)
 
 
-def multilayer_alert_plot(df,fig_title = None,resize_grids = True,kind = 'line',save = cf.fb_desktop):
+def multilayer_alert_plot(df,fig_title = None,resize_grids = True,kind='line',save=None):
     """
     Relates to risk.report.trigger_crypto_transaction
     """
@@ -282,7 +282,7 @@ def multilayer_alert_plot(df,fig_title = None,resize_grids = True,kind = 'line',
     return fig
 
 
-def multilayer_trade_plot(df,fig_title = None,resize_grids = True,kind = 'line',save = cf.fb_desktop):
+def multilayer_trade_plot(df,fig_title = None,resize_grids = True,kind = 'line',save = None):
     """
     Relates to risk.report.trigger_crypto_transaction
     """

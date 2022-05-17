@@ -123,28 +123,40 @@ def mc_model_backtest(rets, wgts, qtl, start = -251, model_fmt = {'model':'mc','
     return out
 
 
-def vaR_overshoot_backtest(rets):
+def vaR_overshoot_backtest(rets, wgts=np.array([[1]]), window=250, engine='garch', verbose=True):
     """
     Model backtest for regulatory requirements
     """
     from trlib.risk_analytics import risk_engines as rie
-    out = rets.copy()
+    out = rets.copy()[-window:]
     for dd in out.index:
-        tmp_fhs_gjr = rie.portfolio_vaR(rets[:dd],
-                                        np.array([[1]]),
-                                        engine = 'gjr',
-                                        fmt_engine = {'qtl': 0.01, 'fhs': True},
-                                        verbose = False)
-        # Assign gjr_fhs to output
-        out.loc[dd, 'gjr_fhs'] = tmp_fhs_gjr.iloc[0][0]
+        tmp_rets = rets[:dd][-window:]
+        if verbose: print("Running VaR Backtest for horizon (lenght %s): %s - %s"%(len(tmp_rets), tmp_rets.index[0], tmp_rets.index[-1]))
+        if engine == 'garch':
+            tmp_fhs_gjr = rie.portfolio_vaR(tmp_rets,
+                                            wgts,
+                                            engine = 'gjr',
+                                            fmt_engine = {'qtl': 0.01, 'fhs': True, 'window':window},
+                                            verbose = False)
+            # Assign gjr_fhs to output
+            out.loc[dd, 'gjr_fhs'] = tmp_fhs_gjr.iloc[0][0]
 
-        tmp_gjr = rie.portfolio_vaR(rets[:dd],
-                                    np.array([[1]]),
-                                    engine = 'gjr',
-                                    fmt_engine = {'qtl': 0.01, 'fhs': False},
-                                    verbose = False)
-        # Assign gjr to output
-        out.loc[dd, 'gjr'] = tmp_gjr.iloc[0][0]
+            tmp_gjr = rie.portfolio_vaR(tmp_rets,
+                                        wgts,
+                                        engine = 'gjr',
+                                        fmt_engine = {'qtl': 0.01, 'fhs': False, 'window':window},
+                                        verbose = False)
+            # Assign gjr to output
+            out.loc[dd, 'gjr'] = tmp_gjr.iloc[0][0]
+
+        elif engine == 'mc':
+            tmp_mc = rie.portfolio_vaR(tmp_rets,
+                                       wgts,
+                                       engine = 'mc',
+                                       fmt_engine = {'qtl': 0.01, 'distr': 't', 'n_sim': 500, 'window':window})
+
+            # Assign mc to output
+            out.loc[dd, 'mc'] = tmp_mc.iloc[0][0]
 
     return out
 
