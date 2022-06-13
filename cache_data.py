@@ -14,7 +14,6 @@ from trlib import config as cf
 
 def cache_load(slice_project='caracalla', verbose=True):
     """
-    Test123
     Loads dictionary and stores them to variables defined in trlib/config.py
     config.cache_prices: dataframe - prices of current investible universe
     config.cache_info: dictionary - information on a symbol e.g. country, currency, name
