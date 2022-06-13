@@ -98,7 +98,7 @@ def calculate_vaR_garch(rets, qtl=0.01, holding_period=1, rescale=100, decay=1, 
         # q = am.distribution.ppf([qtl], res.params[-2 if garch_engine == 'egarch' else -1:]) FB20220511 only to use if distr for egarch is 'skewt'
         q = am.distribution.ppf([qtl], res.params[-1:])
     # Multiply Result by -1 fpr better intuition:
-    value_at_risk = -1 * cond_mean.values - np.sqrt(cond_var).values * q[None, :]
+    value_at_risk = -1 * cond_mean.values + np.sqrt(cond_var).values * q[None, :]
     value_at_risk = pd.DataFrame(value_at_risk, columns=['var%s_1d' %str(int(100 * (1-qtl)))], index=['VaR'])
 
 

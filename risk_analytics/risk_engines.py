@@ -58,7 +58,7 @@ def portfolio_vaR(rets_orig, wgts, holding_period=1, engine='mc', fmt_engine={},
         # window: lookback period, e.g. 250 days
         # n_sim: number of simulations
 
-        fmt_engine_keys = ['window', 'holding_period', 'n_sim', 'distr', 'decay', 'qtl']
+        fmt_engine_keys = ['window', 'holding_period', 'n_sim', 'distr', 'decay', 'ewma_cov', 'qtl']
         # Default Values
         fmt_engine_default = {'window_default': 250,
                               'holding_period_default': 1,
@@ -66,6 +66,7 @@ def portfolio_vaR(rets_orig, wgts, holding_period=1, engine='mc', fmt_engine={},
                               'n_sim_default': 1000,
                               'distr_default': 'norm',
                               'decay_default': 0.94,
+                              'ewma_cov_default': True,
                               'qtl': 0.01}
 
     elif engine == 'hs':
@@ -131,6 +132,7 @@ def portfolio_vaR(rets_orig, wgts, holding_period=1, engine='mc', fmt_engine={},
                                                  n = fmt_engine['n_sim'],
                                                  sim_len = fmt_engine['window'],
                                                  distr = fmt_engine['distr'],
+                                                 ewma_cov = True,
                                                  verbose = verbose)
 
         # Build Output
@@ -138,22 +140,11 @@ def portfolio_vaR(rets_orig, wgts, holding_period=1, engine='mc', fmt_engine={},
         # Calculate Value at Risk for holding period and quantile
         qtl = fmt_engine['qtl']
         h = fmt_engine['holding_period']
+        tmp_vaR = sim_rets.dot(wgts.T).groupby("sim_id").quantile(qtl) * np.sqrt(h)
+        tmp_vaR.columns = ['var%s_%sd' % (str(int(100 * (1-qtl))), str(h))]
+        out.loc['VaR', 'var%s_%sd' % (str(int(100 * (1-qtl))), str(h))] = tmp_vaR.median().iloc[0] * np.sqrt(h)
 
-        # Apply EWMA:
-        vol_ewma_mc = smo.ewma_volatility(sim_rets.unstack().T, decay = fmt_engine['decay'])
-
-        # Calculate z-score of the quantile:
-        fit_norm = sim_rets.unstack().T.apply(lambda x: norm.fit(x), axis = 0)
-        if fmt_engine['distr'] == 'norm':
-            vaR_mc_ewma = -fit_norm.iloc[0] * h + vol_ewma_mc.T.iloc[:, 0] * norm.ppf(qtl) * np.sqrt(h)
-        elif fmt_engine['distr'] == 't':
-            # fit_t = sim_rets.unstack().T.apply(lambda x: t.fit(x), axis = 0)
-            # vaR_mc_ewma = -fit_norm.iloc[0] * h + (h*(fit_t.iloc[0] - 2)/fit_t.iloc[0])**0.5*t.ppf(qtl, fit_t.iloc[0]) * vol_ewma_mc.T.iloc[:,0]
-            vaR_mc_ewma = -fit_norm.iloc[0]*h + (h*(5 - 2)/5) ** 0.5*t.ppf(qtl,5)*vol_ewma_mc.T.iloc[:,0]
-
-        out.loc['VaR', 'var%s_%sd' % (str(int(100 * (1-qtl))), str(h))] = vaR_mc_ewma.median()
-
-
+    # Historical Simulation
     elif engine == 'hs':
         if verbose: print("\nInitializing Historical Simulation for Value at Risk Calculation")
         # Build portfolio
@@ -162,7 +153,7 @@ def portfolio_vaR(rets_orig, wgts, holding_period=1, engine='mc', fmt_engine={},
         # Apply EWMA volatility
         vol_ewma = smo.ewma_volatility(ret_vaR[-fmt_engine['window']:], decay=fmt_engine['decay'])
 
-        #Calculate VaR
+        # Calculate VaR
         qtl = fmt_engine['qtl']
         h = fmt_engine['holding_period']
         if fmt_engine['distr'] == 'norm':

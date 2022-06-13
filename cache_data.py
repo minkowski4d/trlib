@@ -12,8 +12,9 @@ from trlib import pandas_patched as pd
 from trlib import config as cf
 
 
-def cache_load(verbose=True):
+def cache_load(slice_project='caracalla', verbose=True):
     """
+    Test123
     Loads dictionary and stores them to variables defined in trlib/config.py
     config.cache_prices: dataframe - prices of current investible universe
     config.cache_info: dictionary - information on a symbol e.g. country, currency, name
@@ -23,13 +24,25 @@ def cache_load(verbose=True):
     # Define Variables:
     data_pth = '/Volumes/GoogleDrive/My Drive/Risk/Data/'
 
+    if verbose: print("\n ***************** Pulling Securities Info Cache for Caracalla Universe *****************\n")
+    cf.cache_info['caracalla'] = pd.read_pickle(os.path.join(data_pth, 'cache_universe_caracalla.pkl'))
+    if verbose: print("\n ***************** Carcalla Universe Loaded *****************\n")
+
+    if verbose: print("\n ***************** Pulling Securities Info Cache for MSCI Universe *****************\n")
+    cf.cache_info['msci'] = pd.read_pickle(os.path.join(data_pth, 'cache_universe_msci.pkl'))
+    if verbose: print("\n ***************** MSCI Universe Loaded *****************\n")
+
+    if verbose: print("\n ***************** Pulling Securities Info Cache for MSCI Short Universe *****************\n")
+    cf.cache_info['msci_short'] = pd.read_pickle(os.path.join(data_pth, 'cache_universe_msci_short.pkl'))
+    if verbose: print("\n ***************** MSCI Short Universe Loaded *****************\n")
+
     if verbose: print("\n ***************** Pulling Securities Price Cache *****************\n")
     cf.cache_prices = pd.read_pickle(os.path.join(data_pth, 'cache_prices.pkl'))
     if verbose: print("\n ***************** Price Cache Loaded *****************\n")
 
-    if verbose: print("\n ***************** Pulling Securities Info Cache for Caracalla Universe *****************\n")
-    cf.cache_info['caracalla'] = pd.read_pickle(os.path.join(data_pth, 'cache_universe_caracalla.pkl'))
-    if verbose: print("\n ***************** Carcalla Universe Loaded *****************\n")
+    if slice_project == 'caracalla':
+        cf.cache_prices = cf.cache_prices[cf.cache_info['caracalla'].index]
+
 
 
 
@@ -49,8 +62,12 @@ def build_info_cache(save_cache=True, verbose=True):
     if verbose: print("\n ********* 1. Caracalla Universe Cache *********\n")
     # Check for already dumped cache files
     data_raw_pth = '/Volumes/GoogleDrive/My Drive/Risk/Data/'
-    if 'cache_universe_caracalla.pkl' in os.listdir(data_raw_pth):
-        caracalla_univ_0 = pd.read_pickle(os.path.join(data_raw_pth, 'cache_universe_caracalla.pkl'))
+
+    for univ_cache in os.listdir(data_raw_pth):
+        if 'cache_universe_caracalla.pkl' :
+            caracalla_univ_0 = pd.read_pickle(os.path.join(data_raw_pth, 'cache_universe_caracalla.pkl'))
+        elif 'cache_universe_msci.pkl':
+            out_dict['msci_info'] = caracalla_univ_0
 
     # Read New Snowflake Data
     df_new = dtf.get_universe()

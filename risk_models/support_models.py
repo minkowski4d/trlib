@@ -32,6 +32,23 @@ def ewma_volatility(rets, window=250, decay=1):
     return out
 
 
+def ewma_covariance(rets, decay=0.94, window=250):
+    """
+    Calculates EWMA Covariance Matrix on a given return series
+    """
+    rets_window = rets[-window:]
+    ewm_values = np.power(decay, np.arange(window - 1, -1, -1))*(1 - decay)
+
+    normalized = (rets_window - rets_window.mean()).fillna(0).to_numpy()
+
+    out = ((ewm_values*normalized.T)@normalized/ewm_values.sum())
+
+    return out
+
+
+
+
+
 def cornish_fisher_approx(zorig, rets):
     """
     Cornish Fisher Approximation
@@ -49,3 +66,7 @@ def cornish_fisher_approx(zorig, rets):
              (2*zorig ** 3 - 5*zorig)*(skew_sample ** 2)/36) + (12*zorig ** 4 - 6*zorig ** 2)
 
     return z_new
+
+
+
+

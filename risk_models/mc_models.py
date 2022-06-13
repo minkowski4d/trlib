@@ -13,13 +13,15 @@ from trlib import utils as ut
 
 
 
-def mc_simulate(rets, n=1000, sim_len=250, distr='norm', verbose=True):
+def mc_simulate(rets, n=1000, sim_len=250, distr='norm', decay=0.94, ewma_cov=False, verbose=True):
     """
     Simulation based on MonteCarlo Algorithm.
     @param rets: dataframe - underlying returns
     @param n: integer -  number of simulations, default = 1000
     @param sim_len: integer - length of simulation output, default = 250
     @param distr: string - multivariate distribution used in simulation, default = 'norm', options = 't' for Student T
+    @decay: per RiskMetrics 0.94
+    @ewma_cov: apply Ewma covariance estimation for multivariate random numbers
     @param verbose:
 
     Additional Info:
@@ -36,7 +38,11 @@ def mc_simulate(rets, n=1000, sim_len=250, distr='norm', verbose=True):
     rets_mc = rets.copy()
     means = list(rets_mc.mean())
 
-    rets_cov_mtx = np.matrix(rets_mc.cov())
+    if ewma_cov:
+        from trlib.risk_models import support_models as smo
+        rets_cov_mtx = smo.ewma_covariance(rets)
+    else:
+        rets_cov_mtx = np.matrix(rets_mc.cov())
 
     # Simulation Iteration
     sim_rets = pd.DataFrame(); sim_ts = pd.DataFrame()

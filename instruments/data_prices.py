@@ -74,7 +74,13 @@ def get_yahoo_prices(symbols=['LTC-USD'], field='close', startdate=date(2020, 1,
 
 
 
-def find_corr_series(df, ids2corr =[]):
+def find_beta_series(df, ids2corr =[]):
+
+
+    # Import Python Modules
+    import seaborn as sns
+    import missingno as mno
+    from sklearn import linear_model
 
     if len(ids2corr) == 0:
         # MSCI World ETFs with best data covorage as of 20220509:
