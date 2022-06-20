@@ -18,6 +18,7 @@ def garch_exp(rets_rescaled, dist='t'):
     """
     Calculation of  EGarch Volatility and Residual Returns
     :param rets_rescaled: returns series multiplied by rescaling factor, e.g. 100
+    :param dist: distirbution that is used for maximum likelyhood estimation
     """
 
     # Specify EGARCH model assumptions
