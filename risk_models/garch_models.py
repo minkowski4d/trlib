@@ -32,7 +32,7 @@ def garch_exp(rets_rescaled, dist='t'):
     egarch_resid = egarch_result.resid
     # Calculate Standardized Residuals:
     egarch_std_resid = egarch_resid / egarch_vol
-
+    # Test
     return egarch_gm, egarch_result, egarch_vol, egarch_resid, egarch_std_resid
 
 
