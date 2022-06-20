@@ -375,8 +375,8 @@ def multilayer_trade_plot(df,fig_title = None,resize_grids = True,kind = 'line',
     return fig
 
 
-def perf_plot(df,fdate = None,freq = 'D',delta = [1,0],int_loc = 20,logy = False,nint = 5,ratio = False,cmap = None,
-              tlt = None,y_lbl = None,legend = None, annotate = True, **kwargs):
+def perf_plot(df, fdate=None, freq='D', delta=[1,0], int_loc=20, logy=False, nint=5, ratio=False, cmap=None,
+              tlt=None, y_lbl=None, legend=None, annotate=True, **kwargs):
     """
     Function for TimeSeries Plot with Delta Subplot. Delta works only with two series!
     """
@@ -410,13 +410,13 @@ def perf_plot(df,fdate = None,freq = 'D',delta = [1,0],int_loc = 20,logy = False
         n_col = 2
     else:
         n_col = 1
-    ax0.legend(ncol = n_col)
+    ax0.legend(ncol = n_col, loc='best')
     ax0.margins(0)
     ax0.grid(b = True,which = 'major',color = 'grey',linestyle = '-',alpha = 0.6)
     if tlt:
-        ax0.title(tlt)
+        ax0.set_title(tlt)
     if y_lbl:
-        ylabel(y_lbl,fontsize = 16)
+        ylabel(y_lbl, fontsize = 16)
 
     if legend is None:
         leg = ax0.get_legend()
